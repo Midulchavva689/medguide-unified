@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MedPulse Live Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+        .chat-box { max-height: 60vh; overflow-y: auto; border: 1px solid #dee2e6; border-radius: .5rem; padding: 1rem; background: #fff; }
+        .msg { margin-bottom: .75rem; }
+        .msg-user { text-align: right; }
+        .msg-assistant { text-align: left; }
+    </style>
+</head>
+<body>
+<div class="container py-4">
+    <h2 class="mb-4 text-center">🚀 MedPulse Live Chatbot</h2>
+    <div class="chat-box" id="chatBox"></div>
+    <form id="chatForm" class="d-flex mt-3">
+        <input type="text" id="userInput" class="form-control me-2" placeholder="Ask a medical question..." required autocomplete="off" />
+        <button type="submit" class="btn btn-primary">Send</button>
+    </form>
+</div>
+
+<script>
+    const form = document.getElementById('chatForm');
+    const input = document.getElementById('userInput');
+    const chatBox = document.getElementById('chatBox');
+
+    function appendMessage(text, from) {
+        const div = document.createElement('div');
+        div.className = `msg ${from === 'user' ? 'msg-user' : 'msg-assistant'}`;
+        div.innerHTML = `<strong>${from === 'user' ? 'You' : 'Bot'}:</strong> ${text}`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const message = input.value.trim();
+        if (!message) return;
+        appendMessage(message, 'user');
+        input.value = '';
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message })
+            });
+            const data = await response.json();
+            appendMessage(data.text, 'assistant');
+        } catch (err) {
+            appendMessage('Error contacting chatbot.', 'assistant');
+        }
+    });
+</script>
+</body>
+</html>
