@@ -1,5 +1,4 @@
 .env
-__pycache__
-*.db
-medpulse.db
+__pycache__/
+*.pyc
 .DS_Store
