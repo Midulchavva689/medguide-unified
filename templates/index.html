@@ -1383,6 +1383,17 @@
         chatPl: "दवा, लक्षण या प्रिस्क्रिप्शन के बारे में पूछें...", askBtn: "एजेंट से पूछें →",
         thName: "नाम", thStr: "शक्ति", thPrice: "कीमत", thExpiry: "समाप्ति", thQty: "मात्रा", thStock: "स्टॉक", thAct: "कार्रवाई",
         printBtn: "🖨️ प्रिस्क्रिप्शन प्रिंट करें", medicinesListed: "दवाएं सूचीबद्ध", inStock: "स्टॉक में", outStock: "स्टॉक में नहीं"
+      },
+      te: {
+        title: "మెడ్‌గైడ్ AI", sub: "ప్రిస్క్రిప్షన్ & స్టాక్ అసిస్టెంట్",
+        tabChat: "💬 AI అసిస్టెంట్", tabStock: "📦 స్టాక్ నిర్వహణ",
+        welcomeTitle: "నేను మీకు ఎలా సహాయపడగలను?",
+        welcomeSub: "మందుల లభ్యత, మోతాదు సూచనలు, ప్రత్యామ్నాయాలు లేదా లక్షణాల ఆధారంగా సిఫార్సుల గురించి నన్ను అడగండి.",
+        boxTitle: "📦 స్టాక్ నిర్వహణ", addBtn: "+ మందును జోడించండి",
+        lblOnline: "ఆన్‌లైన్", searchPl: "🔍 మందుల కోసం వెతకండి...",
+        chatPl: "మందులు, లక్షణాలు లేదా ప్రిస్క్రిప్షన్ గురించి అడగండి...", askBtn: "ఏజెంట్‌ను అడగండి →",
+        thName: "పేరు", thStr: "సామర్థ్యం", thPrice: "ధర", thExpiry: "గడువు", thQty: "పరిమాణం", thStock: "స్టాక్", thAct: "చర్యలు",
+        printBtn: "🖨️ ప్రిస్క్రిప్షన్ ప్రింట్ చేయండి", medicinesListed: "మందుల జాబితా", inStock: "స్టాక్‌లో ఉంది", outStock: "స్టాక్ లేదు"
       }
     };
 
@@ -1465,7 +1476,10 @@
     }
 
     function toggleLang() {
-      currentLang = currentLang === 'en' ? 'hi' : 'en';
+      if (currentLang === 'en') currentLang = 'hi';
+      else if (currentLang === 'hi') currentLang = 'te';
+      else currentLang = 'en';
+      
       applyLang();
       checkHealth();
       renderSidebar();
@@ -1479,7 +1493,10 @@
       document.querySelector('.header-titles p').textContent = t.sub;
       document.getElementById('tabChat').textContent = t.tabChat;
       document.getElementById('tabStock').textContent = t.tabStock;
-      document.getElementById('langBtn').textContent = currentLang === 'en' ? '🌐 EN' : '🌐 हिंदी';
+      let langLabel = "🌐 EN";
+      if (currentLang === 'hi') langLabel = "🌐 हिंदी";
+      if (currentLang === 'te') langLabel = "🌐 తెలుగు";
+      document.getElementById('langBtn').textContent = langLabel;
       document.getElementById('lblOnline').textContent = t.lblOnline;
       document.getElementById('stockSearch').placeholder = t.searchPl;
       document.getElementById('queryInput').placeholder = t.chatPl;

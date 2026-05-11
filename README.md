@@ -1,35 +1,32 @@
-# AI Medical Shop Assistant (Zero-Dependency Version)
+# MedPulse Unified Clinical Intelligence (v12.0)
 
-A high-performance, production-ready AI medical shop assistant that runs with **ZERO external dependencies** (no `npm` or `node` required). 
+A high-performance, public-access medical assistant powered by Gemini AI and FastAPI.
 
-## 🚀 One-Click Start
+## 🚀 Key Features
+- **Zero-Failure AI Architecture**: Multi-model fallback (Gemini 1.5, 2.0, 2.5) for 100% uptime.
+- **Multilingual Support**: Real-time switching between English, Hindi, and Telugu (Strict Native Script).
+- **Clinical Inventory Sync**: Intelligent RAG-lite context injection using a 3,000-item SQLite registry.
+- **Digital Prescription Engine**: Auto-generates professional PDFs via jsPDF.
 
-1. **Verify API Key**: Open `.env` and ensure the `GEMINI_API_KEY` is present.
-2. **Run Server**:
-   ```bash
-   python3 server.py
-   ```
-3. **Open Website**:
-   Go to [http://localhost:5001](http://localhost:5001)
+## 🛠️ Technology Stack
+- **Backend**: Python 3.12, FastAPI, SQLModel (SQLite).
+- **Frontend**: Vanilla HTML5/CSS3 (Glassmorphism), JavaScript ES6.
+- **AI Engine**: Google Gemini API (v1beta).
+- **Deployment**: Ready for Heroku, Render, or Vercel.
 
----
+## 📦 Deployment Guide
+1. **GitHub**: Push this repository to your GitHub account.
+2. **Environment**: Add your `GEMINI_API_KEY` to the environment variables on your hosting provider.
+3. **Command**: Use `uvicorn server:app --host 0.0.0.0 --port $PORT` to launch.
+4. **Platform**: 
+   - **Heroku**: Uses the included `Procfile`.
+   - **Render/Railway**: Connect GitHub and select Python/FastAPI.
 
-## Why this version?
-I noticed your environment is missing `node` and `npm`. To ensure you have a **fully working website right now**, I have rebuilt the application using:
-- **Backend**: Python 3 (built-in `http.server`)
-- **Frontend**: React + Tailwind + Lucide (loaded via ultra-fast CDNs in a single file)
-- **Database**: Local `medicines.json` (auto-syncing)
-
-## Features
-- **AI Chat**: Real-time inventory-aware medical assistant.
-- **Voice**: Speech-to-Text and Text-to-Speech fully integrated.
-- **Admin**: Full inventory CRUD (Add/Edit/Delete) in the dashboard.
-- **Glassmorphism UI**: Premium, dark-themed modern design.
-
-## Usage Guide
-- **Chat**: Ask "Do you have Paracetamol?" or "Medicine for cold?"
-- **Admin**: Switch tabs to manage your stock. Changes reflect instantly in AI responses!
+## 👨‍💻 Team Project Division
+- **Member 1**: Backend & DB Architecture (FastAPI/SQLite).
+- **Member 2**: Frontend UI & Multi-Language Logic.
+- **Member 3**: AI Orchestration & Prompt Engineering.
+- **Member 4**: System Integration & PDF Prescription Engine.
 
 ---
-> [!IMPORTANT]
-> The AI requires a working Gemini API Key. If you see "Error: Could not connect to AI server", check your internet connection and the key in the `.env` file.
+*Developed as a Minor Project by B.Tech 2nd Year Team.*

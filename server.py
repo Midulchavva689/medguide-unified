@@ -157,8 +157,15 @@ def get_local_reply(user_message, medicines: List[Medicine]):
     res += "### ⚠️ Safety Note\n> This is a local automated analysis. Professional consultation is required."
     return res
 
-def get_ai_response(user_message, medicines_context, custom_api_key=None):
+def get_ai_response(user_message, medicines_context, custom_api_key=None, target_lang='en'):
     active_key = (custom_api_key.strip() if custom_api_key else GEMINI_API_KEY)
+    
+    lang_map = {
+        'en': 'English',
+        'hi': 'Hindi',
+        'te': 'Telugu'
+    }
+    lang_name = lang_map.get(target_lang, 'English')
     
     # 1. Smart Context Enrichment
     stock_info = "\n".join([
@@ -179,17 +186,19 @@ def get_ai_response(user_message, medicines_context, custom_api_key=None):
     
     INSTRUCTIONS:
     1. If the user asks about health/medicine, prioritize the inventory but provide deep clinical reasoning.
-    2. If the user asks general questions, answer with full versatility and intelligence.
-    3. LANGUAGE: Respond in a natural, empathetic tone. Use clear and professional English. Do NOT use Hindi.
-    4. LENGTH: Keep your answers medium-sized and concise. Avoid overly long or overly detailed explanations. Break text into small, readable paragraphs.
-    5. VERSATILITY: Never say "I can only answer medical questions." You handle EVERY situation.
+    2. If the user asks general questions, answer them brilliantly but ALWAYS conclude by asking how you can help with their medical or pharmacy needs.
+    3. LANGUAGE: You MUST respond TOTALLY in {lang_name}. Do NOT mix languages. Do NOT use English if the language is Hindi or Telugu.
+    4. SCRIPT: Use the native script for the language (Devanagari for Hindi, Telugu script for Telugu).
+    5. LENGTH: Keep your answers medium-sized and concise. Break text into small, readable paragraphs.
+    6. PIVOT: For every single response, relate the conversation back to health, wellness, or the MedPulse Pharmacy inventory.
+    7. VERSATILITY: Never say "I can only answer medical questions." You handle EVERY situation but remain a medical assistant at heart.
     
     USER QUERY: "{user_message}"
     """
 
     # Tier 1: Gemini (Universal Intelligence)
     if active_key and "YOUR_API_KEY" not in active_key:
-        for model in ["gemini-2.5-flash", "gemini-2.0-flash"]:
+        for model in ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash", "gemini-flash-latest", "gemini-pro-latest"]:
             try:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={active_key}"
                 payload = {"contents": [{"parts": [{"text": system_prompt}]}]}
@@ -197,7 +206,9 @@ def get_ai_response(user_message, medicines_context, custom_api_key=None):
                 with urllib.request.urlopen(req, context=ssl._create_unverified_context(), timeout=10) as response:
                     res_data = json.loads(response.read().decode())
                     return res_data['candidates'][0]['content']['parts'][0]['text']
-            except: continue
+            except Exception as e:
+                print(f"❌ Gemini Tier Failure ({model}): {e}")
+                continue
 
     # Tier 2: Ollama/DuckDuckGo (Cloud/Local Versatility)
     local_ollama = get_ollama_response(system_prompt)
@@ -307,7 +318,8 @@ def chat_endpoint(req: Request, chat_req: ChatRequest, session: Session = Depend
     relevant = [m for m in all_meds if q in m.name.lower() or (m.use_case and q in m.use_case.lower())]
     if not relevant: relevant = list(islice((m for m in all_meds if m.quantity > 0), 15))
     
-    reply = get_ai_response(chat_req.query, relevant, api_key)
+    lang = req.headers.get('x-lang', 'en')
+    reply = get_ai_response(chat_req.query, relevant, api_key, lang)
     return {"success": True, "reply": reply}
 
 # --- DB Initialization & Data Migration ---
