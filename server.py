@@ -50,22 +50,26 @@ templates = Jinja2Templates(directory="templates")
 
 # --- AI Logic Components ---
 def load_env():
-    env = {}
+    # Priority 1: System Environment (for Cloud)
+    # Priority 2: Local .env file
+    env = dict(os.environ)
     if ENV_FILE.exists():
         with open(ENV_FILE, "r") as f:
             for line in f:
-                if "=" in line:
+                if "=" in line and not line.strip().startswith("#"):
                     key, val = line.strip().split("=", 1)
-                    env[key] = val
+                    if key not in env:
+                        env[key] = val
     return env
 
 CONFIG = load_env()
-GEMINI_KEYS_RAW = [
+GEMINI_KEYS = [
     CONFIG.get("GEMINI_API_KEY"),
     "AIzaSyBwQcjgmXUAsw5r4FZXO5t8_EZ_aUm_TGE",
     "AIzaSyCbsbvGCe7C9mCtdaTycZB2eUFuzsYKG_E"
 ]
-GEMINI_KEYS = [k.strip() for k in GEMINI_KEYS_RAW if k and "YOUR_API_KEY" not in k]
+# Clean up keys and remove placeholders
+GEMINI_KEYS = [k.strip() for k in GEMINI_KEYS if k and "YOUR_API_KEY" not in k]
 GEMINI_API_KEY = GEMINI_KEYS[0] if GEMINI_KEYS else "YOUR_API_KEY_HERE"
 
 # --- FastAPI App Initialization ---
@@ -158,61 +162,40 @@ def get_local_reply(user_message, medicines: List[Medicine]):
     return res
 
 def get_ai_response(user_message, medicines_context, custom_api_key=None, target_lang='en'):
-    active_key = (custom_api_key.strip() if custom_api_key else GEMINI_API_KEY)
+    # Key Rotation Strategy
+    keys_to_try = [custom_api_key.strip()] if custom_api_key else GEMINI_KEYS
     
-    lang_map = {
-        'en': 'English',
-        'hi': 'Hindi',
-        'te': 'Telugu'
-    }
+    lang_map = {'en': 'English', 'hi': 'Hindi', 'te': 'Telugu'}
     lang_name = lang_map.get(target_lang, 'English')
     
-    # 1. Smart Context Enrichment
     stock_info = "\n".join([
         f"- {m.name} ({m.strength or 'N/A'}): {'✅ In Stock' if m.quantity > 0 else '⚠️ Out of Stock'}. Use: {m.use_case}"
         for m in medicines_context[:10]
     ])
     
-    # 2. Universal Prompt Design
     system_prompt = f"""
     ROLE: You are 'MedPulse Universal AI'—a high-performance, versatile artificial intelligence.
-    CAPABILITIES:
-    - Advanced Clinical Consultant: Expert in pharmacy, surgery, and diagnostics.
-    - General Intelligence: Capable of answering ANY question (science, history, tech, creative).
-    - Resource Manager: You have access to the MedPulse Pharmacy Inventory.
-    
-    INVENTORY STATUS (Live):
-    {stock_info}
-    
+    CAPABILITIES: Expert in pharmacy, diagnostics, and general intelligence.
+    INVENTORY STATUS: {stock_info}
     INSTRUCTIONS:
-    1. If the user asks about health/medicine, prioritize the inventory but provide deep clinical reasoning.
-    2. If the user asks general questions, answer them brilliantly but ALWAYS conclude by asking how you can help with their medical or pharmacy needs.
-    3. LANGUAGE: You MUST respond TOTALLY in {lang_name}. Do NOT mix languages. Do NOT use English if the language is Hindi or Telugu.
-    4. SCRIPT: Use the native script for the language (Devanagari for Hindi, Telugu script for Telugu).
-    5. LENGTH: Keep your answers medium-sized and concise. Break text into small, readable paragraphs.
-    6. PIVOT: For every single response, relate the conversation back to health, wellness, or the MedPulse Pharmacy inventory.
-    7. VERSATILITY: Never say "I can only answer medical questions." You handle EVERY situation but remain a medical assistant at heart.
-    
+    1. Respond TOTALLY in {lang_name} script (No mixing).
+    2. Answer ANY user query brilliantly.
+    3. PIVOT every single response back to medical, health, or pharmacy needs.
     USER QUERY: "{user_message}"
     """
 
-    # Tier 1: Gemini (Universal Intelligence)
-    if active_key and "YOUR_API_KEY" not in active_key:
-        for model in ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash", "gemini-flash-latest", "gemini-pro-latest"]:
+    # Tier 1 & 2: Gemini Cluster with Key Rotation
+    for active_key in keys_to_try:
+        if not active_key or "YOUR_API_KEY" in active_key: continue
+        for model in ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-flash-latest"]:
             try:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={active_key}"
                 payload = {"contents": [{"parts": [{"text": system_prompt}]}]}
                 req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"}, method="POST")
-                with urllib.request.urlopen(req, context=ssl._create_unverified_context(), timeout=10) as response:
+                with urllib.request.urlopen(req, context=ssl._create_unverified_context(), timeout=12) as response:
                     res_data = json.loads(response.read().decode())
                     return res_data['candidates'][0]['content']['parts'][0]['text']
             except Exception as e:
-                print(f"❌ Gemini Tier Failure ({model}): {e}")
-                continue
-
-    # Tier 2: Ollama/DuckDuckGo (Cloud/Local Versatility)
-    local_ollama = get_ollama_response(system_prompt)
-    if local_ollama: return local_ollama
 
     ddg_res = get_ddg_ai_response(system_prompt)
     if ddg_res: return ddg_res
