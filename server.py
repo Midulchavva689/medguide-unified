@@ -124,41 +124,41 @@ def get_ddg_ai_response(prompt):
             return full_text if full_text else None
     except: return None
 
-# --- Enhanced Clinical Protocols ---
-CLINICAL_PROTOCOLS = {
-    "neurological": {"symptoms": ["headache", "dizziness", "seizures", "migraine"], "medicines": ["Paracetamol", "Sumatriptan"]},
-    "cardiac": {"symptoms": ["chest pain", "heart", "blood pressure"], "medicines": ["Aspirin", "Amlodipine"]},
-    "respiratory": {"symptoms": ["cough", "breathing", "asthma"], "medicines": ["Salbutamol", "Amoxicillin"]},
-    "digestive": {"symptoms": ["stomach pain", "acidity", "diarrhea"], "medicines": ["Omeprazole", "ORS"]},
-    "infectious": {"symptoms": ["fever", "chills", "infection"], "medicines": ["Paracetamol", "Azithromycin"]},
-    "general": {"symptoms": ["pain", "fever"], "medicines": ["Paracetamol", "Ibuprofen"]}
+# --- Ultra-Smart Clinical Knowledge Base (Offline Intelligence) ---
+KNOWLEDGE_BASE = {
+    "paracetamol": "Paracetamol is a common analgesic and antipyretic. For adults, the standard dose is 500mg to 1g every 4-6 hours. It is effective for mild to moderate pain and fever. Avoid exceeding 4g in 24 hours to prevent liver toxicity.",
+    "amoxicillin": "Amoxicillin is a broad-spectrum penicillin antibiotic. It is used to treat bacterial infections like pneumonia, bronchitis, and ear infections. Typical dosage is 250mg-500mg three times daily. Complete the full course even if you feel better.",
+    "fever": "For fever management: 1. Maintain hydration. 2. Use antipyretics like Paracetamol (500mg). 3. Rest in a cool room. If temperature exceeds 103°F (39.4°C) or lasts >3 days, consult a doctor immediately.",
+    "headache": "Headaches can be tension-based or migraineous. Immediate relief includes Paracetamol or Ibuprofen. Ensure hydration and rest in a dark room. Seek urgent care if accompanied by neck stiffness or vision changes.",
+    "cough": "Cough treatment depends on type (dry vs. productive). Expectorants help with mucus, while suppressants help with dry coughs. Amoxicillin may be required if a bacterial infection is suspected.",
+    "diabetes": "Diabetes management focuses on blood sugar control. Metformin (500mg) is the first-line treatment. Monitor glucose regularly and maintain a balanced diet with regular physical activity.",
+    "hypertension": "High blood pressure is managed with lifestyle changes and medications like Amlodipine. Reduce salt intake, exercise daily, and avoid smoking to protect cardiac health."
 }
 
 def get_local_reply(user_message, medicines: List[Medicine]):
-    """Smart Clinical Local Intelligence (Zero-Failure Engine)"""
+    """Ultra-Smart Clinical Engine (Fallback Tier)"""
     q = user_message.lower()
-    is_hindi = any(ord(c) > 127 for c in user_message)
+    res = "🧠 **Smart Clinical Analysis (Local Reasoning)**\n\n"
     
-    found_meds = []
-    q_words = [w for w in q.replace('?','').replace(',','').split() if len(w) > 3]
-    
-    for m in medicines:
-        m_text = (str(m.name) + " " + str(m.use_case or "") + " " + str(m.category or "")).lower()
-        if any(str(w) in m_text for w in q_words):
-            found_meds.append(m)
-    
-    header = "🧠 **Smart Clinical Analysis (Local Engine)**" if not is_hindi else "🧠 **स्मार्ट नैदानिक विश्लेषण (लोकल इंजन)**"
-    res = f"{header}\n\nPatient Inquiry: *'{user_message}'*\n\n"
-    
+    # Check Knowledge Base
+    found_kb = False
+    for key, info in KNOWLEDGE_BASE.items():
+        if key in q:
+            res += f"### 📘 Clinical Overview: {key.capitalize()}\n{info}\n\n"
+            found_kb = True
+            break
+            
+    # Check Inventory
+    found_meds = [m for m in medicines if m.name.lower() in q or (m.use_case and any(w in m.use_case.lower() for w in q.split()))]
     if found_meds:
-        res += "### 💊 Recommended Clinical Protocol\n"
-        for m in islice(found_meds, 5):
+        res += "### 💊 Inventory & Dosage Status\n"
+        for m in islice(found_meds, 3):
             status = "✅ IN STOCK" if m.quantity > 0 else "⚠️ OUT OF STOCK"
-            res += f"- **{m.name}** ({m.strength or ''})\n  • *Action*: {m.use_case or ''}\n  • *Status*: {status}\n\n"
-    else:
-        res += "⚠️ **Note**: No specific medications found in registry for these terms. Please consult a physician.\n\n"
-        
-    res += "### ⚠️ Safety Note\n> This is a local automated analysis. Professional consultation is required."
+            res += f"- **{m.name}** ({m.strength or ''})\n  • *Usage*: {m.use_case or ''}\n  • *Price*: ₹{m.price}\n  • *Availability*: {status}\n\n"
+    elif not found_kb:
+        res += "I have analyzed your query across our clinical registry. While I couldn't find a direct match, I recommend consulting a licensed pharmacist for these specific symptoms.\n\n"
+
+    res += "### ⚠️ Safety Sentinel\n> This analysis is based on established clinical protocols. Professional consultation is mandatory for formal prescriptions."
     return res
 
 def get_ai_response(user_message, medicines_context, custom_api_key=None, target_lang='en'):
@@ -184,15 +184,15 @@ def get_ai_response(user_message, medicines_context, custom_api_key=None, target
     USER QUERY: "{user_message}"
     """
 
-    # Tier 1 & 2: Gemini Cluster with Key Rotation (Stable v1 API)
+    # Tier 1 & 2: Gemini Cluster with Key Rotation (v1beta for maximum compatibility)
     for active_key in keys_to_try:
         if not active_key or "YOUR_API_KEY" in active_key: continue
-        for model in ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro", "gemini-1.0-pro"]:
+        for model in ["gemini-1.5-flash-latest", "gemini-pro"]:
             try:
-                url = f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={active_key}"
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={active_key}"
                 payload = {"contents": [{"parts": [{"text": system_prompt}]}]}
                 req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"}, method="POST")
-                with urllib.request.urlopen(req, context=ssl._create_unverified_context(), timeout=15) as response:
+                with urllib.request.urlopen(req, context=ssl._create_unverified_context(), timeout=12) as response:
                     res_data = json.loads(response.read().decode())
                     return res_data['candidates'][0]['content']['parts'][0]['text']
             except Exception as e:
