@@ -184,15 +184,15 @@ def get_ai_response(user_message, medicines_context, custom_api_key=None, target
     USER QUERY: "{user_message}"
     """
 
-    # Tier 1 & 2: Gemini Cluster with Key Rotation
+    # Tier 1 & 2: Gemini Cluster with Key Rotation (Stable v1 API)
     for active_key in keys_to_try:
         if not active_key or "YOUR_API_KEY" in active_key: continue
-        for model in ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-flash-latest"]:
+        for model in ["gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro", "gemini-1.0-pro"]:
             try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={active_key}"
+                url = f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={active_key}"
                 payload = {"contents": [{"parts": [{"text": system_prompt}]}]}
                 req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"}, method="POST")
-                with urllib.request.urlopen(req, context=ssl._create_unverified_context(), timeout=12) as response:
+                with urllib.request.urlopen(req, context=ssl._create_unverified_context(), timeout=15) as response:
                     res_data = json.loads(response.read().decode())
                     return res_data['candidates'][0]['content']['parts'][0]['text']
             except Exception as e:
