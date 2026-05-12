@@ -196,7 +196,9 @@ def get_ai_response(user_message, medicines_context, custom_api_key=None, target
                     res_data = json.loads(response.read().decode())
                     return res_data['candidates'][0]['content']['parts'][0]['text']
             except Exception as e:
+                print(f"❌ Gemini Failure ({model}): {e}")
 
+    # Tier 3: DuckDuckGo AI (Final Cloud Fallback)
     ddg_res = get_ddg_ai_response(system_prompt)
     if ddg_res: return ddg_res
 
