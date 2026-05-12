@@ -20,7 +20,7 @@ from sqlmodel import Field, SQLModel, create_engine, Session, select
 from datetime import datetime
 
 # --- Configuration ---
-PORT = 5001
+PORT = int(os.environ.get("PORT", 5001))
 DATABASE_URL = "sqlite:///./medpulse.db"
 DATA_FILE = Path("medicines.json")
 ENV_FILE = Path(".env")
